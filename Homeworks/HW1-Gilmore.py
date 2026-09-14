@@ -6,9 +6,6 @@
 # And any other features you think maybe interesting.
 
 import argparse
-import string
-
-#import height_convert
 
 parser = argparse.ArgumentParser(
                    prog = "FreeFall",
