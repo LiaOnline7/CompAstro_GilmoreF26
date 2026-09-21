@@ -33,10 +33,23 @@ def simp_rule(a,b, N):
     return (delta_x/3) * (f(a) + f(b) + 4*(sum_even) + 2*(sum_odd))
 
 #print(simp_rule(0,3,300))
-
-
-def error_func(a,b,N):
+def error_simp(a,b,N):
     return (1/90)* ((b-a)/N)**4 *np.abs((12*a**2) - (12*b**2))
+print(error_simp(0,3,300))
+
+## Trapezoid Rule
+def f_prime(t):
+    return -2*np.exp(-t**2)
+def trap_rule(a,b, N):
+    s = 0
+
+    for k in range (1, N):
+        point = a + k*((b-a)/N) #(b-a)/N calculates the same number every time (N times)
+        s = s + f(point)
+    return ((b-a)/N) * ( ((1/2)*f(a)) + ((1/2)*f(b) ) + s)
+
+def error_trap(b, a, N):
+    return (1/12)* ((b-a)/N)**2 * np.abs(f_prime(a) - f_prime(b))
 
 #print(error_func(0,3, 20))
 
@@ -60,45 +73,60 @@ if __name__ == "__main__":
                     "Default calculation of this integral sets x from 0 to 3 in steps of 0.1. "
                     "Can also plot the graph of E(x) and its integral.")
 
-    parser.add_argument("-a",
+    calculation_args = parser.add_argument_group("Calculation Arguments")
+    print_args = parser.add_argument_group("Print Output Arguments")
+
+    calculation_args.add_argument("-a",
                         default = 0,
                         type=float,
                         help="change lower limit of the integral, default is 0")
 
-    parser.add_argument('-b',
+    calculation_args.add_argument('-b',
                         default=3,
                         type=float,
                         help="change upper limit of the integral, default is 3")
 
-    parser.add_argument("-N",
+    calculation_args.add_argument("-N",
                         default=300,
                         type=int,
                         help="change number of steps, default is 300")
 
-    parser.add_argument("-error",
+    calculation_args.add_argument("--trapezoid",
+                        action = "store_true",
+                        help = "changes the integration method from the default "
+                               "Simpson's rule to the trapezoid method")
+
+    print_args.add_argument("-error",
                         nargs= '?',
                         const = 20,
                         type = int,
                         help="estimate of the error with x steps, default is 20")
 
-    parser.add_argument("-round",
+    print_args.add_argument("-round",
                         type = int,
                         help = 'rounds the output to a specified place')
 
-    parser.add_argument("-graph",
+    print_args.add_argument("-graph",
                         action= 'store_true',
-                        help="prints a graph of E(x) and its integrand "
-                             "with the area underneath the curve specified by the integral shaded")
+                        help="prints a graph of the E(x) and its integrand,"
+                             " the area underneath the curve calculated by the direct integral is shaded."
+                             "If the method is trapezoid, curve prints green, if Simpson's, curve prints blue.")
 
     args = parser.parse_args()
 
     #print((simp_rule(args.a, args.b, args.N)))
-
+    if args.trapezoid:
+        integration = trap_rule
+        error = error_trap
+        color = 'green'
+    else:
+        integration = simp_rule
+        error = error_simp
+        color = 'blue'
     if args.graph:
         x_range = np.arange(-args.b, args.b,0.1)
-
-        plt.plot(x_range, simp_rule(0, x_range, 300),
-                 label= r'$E(x) = \int_{0}^{x} e^{-t^{2}} dt$', color='blue')
+        plt.plot(x_range, integration(0, x_range, 300),
+                 label= r'$E(x) = \int_{0}^{x} e^{-t^{2}} dt$', color= color)
         plt.plot(x_range, f(x_range),
                  label = r'$f(x) = e^{-t^{2}}$', color = 'grey', alpha = 0.5)
         plt.xlim(-2, 2)
@@ -115,16 +143,17 @@ if __name__ == "__main__":
     if args.error:
         if args.round:
             print(r'$E(x) = \int_' fr'{args.a}' r'^' fr'{args.b}' r'e^{-t^{2}} dt ~ $',
-                  f"{round((simp_rule(args.a, args.b, args.N)), args.round)}",
-                  'error =', f"{round(error_func(args.a, args.b, args.error), args.round)}")
+                  f"{round((integration(args.a, args.b, args.N)), args.round)}",
+                  'error =', f"{round(error(args.a, args.b, args.error), args.round)}")
         else:
             print(r'$E(x) = \int_' fr'{args.a}' r'^' fr'{args.b}' r'e^{-t^{2}} dt ~ $',
-                  simp_rule(args.a, args.b, args.N),
-                  'error =', error_func(args.a, args.b, args.error))
+                  integration(args.a, args.b, args.N),
+                  'error =', error(args.a, args.b, args.error))
 
     else:
         if args.round:
-            print(r'$E(x) = \int_' fr'{args.a}' r'^' fr'{args.b}' r'e^{-t^{2}} dt ~ $', f"{ round( simp_rule(args.a, args.b, args.N), args.round) }")
+            print(r'$E(x) = \int_' fr'{args.a}' r'^' fr'{args.b}' r'e^{-t^{2}} dt ~ $',
+                  f"{ round( integration(args.a, args.b, args.N), args.round) }")
         else:
             print(r'$E(x) = \int_' fr'{args.a}' r'^' fr'{args.b}' r'e^{-t^{2}} dt ~ $',
-                  simp_rule(args.a, args.b,args.N))
+                  integration(args.a, args.b, args.N))
